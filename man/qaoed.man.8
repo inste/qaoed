@@ -1,0 +1,50 @@
+.Dd October 24, 2006
+.Dt qaoed 8
+.Sh NAME
+.Nm qaoed
+.Nd Mulithreaded ATA over Ethernet storage target
+.Xr qaoed 8
+.Sh SYNOPSIS
+.Nm qaoed
+.Op Fl V h f 
+.Op Fl b Ar config_file
+.Sh DESCRIPTION 
+Qaoed is a multithreaded ATA over Ethernet storage target that is easy
+to use and yet higly configurable. Without any argument \fIqaoed\fR will
+try to read the configuration file \fI/etc/qaoed.conf\fR.
+.Pp
+\fINOTE:\fR Most of qaoed's options and behaviour is controled by the 
+configuration file. Please refer to the man-page of the configuration
+file as well as the example configuration included in the package for
+further information on how to use qaoed.
+.Ss OPTIONS
+Valid options are:
+.Bl -tag -width Fl
+.It Fl V
+Print version and exit
+.It Fl h
+Print usage and exit 
+.It Fl f
+Run the qaoed server in the foreground; don't fork(2) and and
+daemonize. (The default is to demonize)
+.It Fl c Ar config_file
+Use an alternate \fIconfig_file\fR.
+.El
+.Sh SIGNALS
+.Bl -tag -width "SIGHUP"
+.It Dv SIGHUP
+Causes server to reread and reload the configuration.
+.El
+.Sh FILES
+.Bl -tag -width "/etc/qaoed.conf"
+.It Pa /etc/qaoed.conf
+Default qaoed configuration file
+.El
+.Sh SEE ALSO
+.Xr qaoed.conf 5
+.Pp
+http://en.wikipedia.org/wiki/ATA-over-Ethernet
+.Pp
+http://www.coraid.com/documents/AoEr8.txt
+.Pp
+http://www.coraid.com/documents/AoEDescription.pdf

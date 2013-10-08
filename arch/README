@@ -1,0 +1,3 @@
+The FreeBSD-port is almost complete
+MacosX does however have problems with pthread_cancel():ation
+in read() making porting difficult .. will investigate further.

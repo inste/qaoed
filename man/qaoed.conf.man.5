@@ -1,0 +1,481 @@
+.Dd October 24, 2006
+.Dt qaoed.conf 5
+.Sh NAME
+.Nm qaoed.conf
+.Nd configuration file for
+.Xr qaoed 8
+.Sh OVERVIEW
+qaoed is a multithreaded ATA over Ethernet storage target that is
+easy to use and yet highly configurable. 
+This is the manpage for 
+the configuration file format used by qaoed.
+.Ss General Syntax
+A configuration file for qaoed consists of global configuration 
+statements and a number of different sections. Each section then contains
+the statements that are valid for that section. Some sections can contain
+subsections. All statements must end with a semicolon (;).
+.Pp
+The following global configuration statements are supported:
+.Bl -tag -width 0n
+.It Ic log-level
+Specifies the default-log level for the qaoe daemon
+.El
+.Pp
+The following configuration sections are supported:
+.Bl -tag -width 0n
+.It Ic logging
+Creates logging targets used to specify where logs go
+.It Ic interface
+Interface specific configuration such as MTU and logging target
+.It Ic default
+Assigns default values used in the device section
+.It Ic device
+Creates an ATA over Ethernet storage target device
+.It Ic access-list
+Creates an access-list used for access-control or logging
+.El
+.Pp
+Comments may appear anywhere in the configuration file and uses either 
+C-style comments or shell-script comments. 
+.Pp
+C-style comments start with the two characters
+.Li /*
+(slash, star) and end with
+.Li */
+(star, slash).
+Because they are completely delimited with these characters,
+they can be used to comment only a portion of a line or to span
+multiple lines. For example:
+.Bd -literal -offset indent
+/* This is the start of a comment.
+   This is still part of the comment.
+   And this is the last line of the comment. */
+.Ed
+.Pp
+Shell-style comments start with the character
+.Li # and continue to the end of the physical line. For example:
+.Bd -literal -offset indent
+# This is the start of a comment. The next line needs a new 
+# hash (#) to also become a comment, even though it is logically
+# part of the previous comment.
+.Ed
+.Pp
+.Sh GLOBAL CONFIGURATION STATEMENTS
+.Ss Syntax
+.Bd -literal
+\fIlog-level\fR = ( \fIerror\fR / \fIinfo\fR / \fInone\fR ) ;
+.Ed
+.Pp
+.Ss Usage
+As of now there is only one configurable global statement.
+.Bl -tag -width 0n
+.It Ic log-level
+The global log-level option sets the log-level for the entire qaoe daemon.
+This log-level will then be inherited by all sub-sections that doesn't have
+its own log-level statement. Valid log-levels:
+.Bl -tag -width 0n
+.It Ic error
+Only log error-messages. Error messages are messages that indicates that 
+something is wrong. This might include read and write errors to devices 
+as well as failure to process incoming packets.
+.It Ic info
+Log error messages and information messages. Information messages are 
+messages that describes internal operation of the qaoe daemon. This
+includes the opening and closing of devices and interfaces as well 
+as the starting and stopping of different worker threads.
+.It Ic none
+Disable logging completly. 
+.El
+.El
+.Sh LOGGING CONFIGURATION SECTION
+.Ss Syntax
+.Bd -literal
+logging {
+	\fIname\fR = "The name of the logging target" ;
+	\fItype\fR = ( \fIsyslog\fR / \fIfile\fR  ) ;
+	
+	\fIfilename\fR = "/var/log/qaoed.log" ;
+
+	\fIsyslog-facility\fR = ( \fILOG_DAEMON\fR / \fILOG_LOCAL0\fR /\fILOG_LOCAL1\fR / 
+	                    \fILOG_LOCAL2\fR / \fILOG_LOCAL3\fR / \fILOG_LOCAL4\fR /
+			    \fILOG_LOCAL5\fR / \fILOG_LOCAL6\fR / \fILOG_LOCAL7\fR /
+			    \fILOG_USER\fR ) ;		       		       
+
+	\fIsyslog-level\fR = ( \fILOG_EMERG\fR / \fILOG_ALERT\fR / \fILOG_CRIT\fR / \fILOG_ERR\fR /
+   	  	         \fILOG_WARNING\fR / \fILOG_NOTICE\fR / \fILOG_INFO\fR / 
+			 \fILOG_DEBUG\fR ) ;
+}
+.Ed			
+.Ss Usage
+Two types of log-targets can be configured, file or syslog. When a
+file-target is created the filename must also be specified but the
+syslog-configuration statements can be omited. When type is syslog the
+filename statement can be omited. Valid values are:
+.Bl -tag -width 0n
+.It Ic name
+Specifies the name of the logging target. The name is later used to
+reference this logging target in the interface, device and access-list
+sections. If the name containes whitespace (or tab) the name must be 
+enclosed in quotes "".
+.It Ic type
+The type specifies where the logging entries go, if type is set to 
+\fIfile\fR then logs are written to the file specified with \fIfilename\fR.
+If type is set to \fIsyslog\fR the logs are sent to syslog using the level
+and facility specied by \fIsyslog-level\fR and \fIsyslog-faclity\fR.
+.It Ic filename
+This statement is only valid if \fItype\fR is set to \fIfile\fR.
+This option pecifies the filename to write the log entries to. The file
+will be created if it doesn't exist, it must be writeble by 
+the qaoe daemon.
+.It Ic syslog-facility
+This statement is only valid if \fItype\fR is set to \fIsyslog\fR.
+Specifies the syslog facility to use when logging to syslog. Avaiable
+arguments are: \fILOG_DAEMON\fR, \fILOG_LOCAL0\fR, \fILOG_LOCAL1\fR,
+\fILOG_LOCAL2\fR, \fILOG_LOCAL3\fR, \fILOG_LOCAL4\fR,
+\fILOG_LOCAL5\fR, \fILOG_LOCAL6\fR, \fILOG_LOCAL7\fR, 
+\fILOG_USER\fR
+.It Ic syslog-level
+This statement is only valid if \fItype\fR is set to \fIsyslog\fR.
+Specifies the syslog-level to use when logging to syslog. Avaiable
+arguments are LOG_EMERG\fR, \fILOG_ALERT\fR, \fILOG_CRIT\fR, \fILOG_ERR\fR,
+\fILOG_WARNING\fR, \fILOG_NOTICE\fR, \fILOG_INFO\fR and \fILOG_DEBUG\fR.
+.El
+.Sh DEVICE CONFIGURATION SECTION
+.Ss Syntax
+.Bd -literal
+device {
+	\fIshelf\fR =  \fInumber\fR ;    /* 0 - 16534 */
+	\fIshelf\fR =  \fInumber\fR ;    /* 0 - 253 */
+
+	\fItarget\fR = \fI/dev/hda2\fR ;
+
+	\fIbroadcast\fR = ( \fIon\fR / \fIoff\fR ) ;
+	\fIwritecache\fR = ( \fIon\fR / \fIoff\fR ) ;
+	\fIinterface\fR = \fIinterface\fR ;
+	
+	\fIlog\fR = \fIlog-target-name\fR ;   
+	\fIlog-level\fR = ( \fIerror\fR / \fIinfo\fR / \fInone\fR ) ;
+	
+	acl {
+	       cfgread = "name of access list" ;
+	       cfgset  = "name of access list" ;
+	       read    = "name of access list" ;        
+	       write   = "name of access list" ;
+	}
+}
+.Ed			
+.Ss Usage
+The device section configures all of the storage target devices exported
+by the qaoe daemon. Valid options are:
+.Bl -tag -width 0n
+.It Ic shelf
+The shelf number to use for this device. The shelf number must be set to a 
+value between 0 and 65533. This value default to zero. (optional)
+.It Ic slot
+The slot number to use for this device. The slot number must be set to a 
+value between 0 and 254. This value default to zero. (optional)
+.It Ic broadcast
+If set to \fIon\fR the device will broadcast its existence on startup. This 
+value defaults to \fIon\fR. Please note: a device advertisement broadcast 
+will only be sent to broadcast (FF:FF:FF:FF:FF:FF) if no readcfg access-list 
+has been attached. If an access-list has been attached to the readcfg 
+function the advertisement will _only_ be sent to those with an allow-rule 
+in the readcfg access-list. (optional)
+.It Ic target
+The file or blockdevice to export. This statement is mandatory in each
+device section. 
+.It Ic writecache
+If set to \fIoff\fR the device will try to disable the write cache for 
+the target file or blockdevice by using the O_SYNC flag for the open(2) call
+and theirby enabling synchronous I/O. See the open(2) manpage for more
+platform specific information on the O_SYNC option. The default value is
+\fIon\fR and will result in significant speed advantages as the qaoe deaemon 
+will be able to utilize the write cache if the platform provides it.
+It is however quite dangerous to have the write-cache enabled in certain
+types of RAID-configurations, especially in combination with a journaling
+filesystem such as ext3 or reiserfs. 
+(optional)
+.It Ic interface
+Interface to export this device on. The interface must be specified either in
+each device section or in the default section. If no interface is specified
+the configuration will fail to load. 
+.It Ic log-level
+Sets the log-level to use for this devices. (optional)
+.It Ic log
+Specifies the logging target for this device. (optional)
+.It Ic acl
+The sub-section acl is optional and can be used to to attach access-lists to 
+the different operations of the device. Each operation described 
+below can can share a single access-list or have one of their own. Each 
+statment is optional.
+.Pp
+.Bl -tag -width 20 -nested
+.It Ic 	cfgread
+Attach an access-list to the cfg read function. This access-list will be 
+invoked each time a client requests to read the configuration. AOE clients/
+initiators broadcast a cfg read to discover storage targets, attaching a 
+restrictive access-list to the cfgread function will inhibit discovery of 
+devices.
+.It Ic 	cfgset
+Attach an access-list to the cfg write/function. This access-list will be 
+invoked each time a client/initiator tries to write/update the cfg-string.
+.It Ic 	read
+Attach an access-list to the ATA read function. This access-list will be 
+invoked each time an initiator/client tries to read data from the storage 
+target.
+.It Ic 	write
+Attach an access-list to the ATA write function. This access-list will be 
+invoked each time a an initiator/client tries to write data to the storage
+target.
+.El
+.El
+.Sh DEFAULT CONFIGURATION SECTION
+.Ss Syntax
+.Bd -literal
+default {
+	\fIshelf\fR =  \fInumber\fR ;    /* 0 - 65534 */
+	\fIshelf\fR =  \fInumber\fR ;    /* 0 - 253 */
+
+	\fIbroadcast\fR = ( \fIon\fR / \fIoff\fR ) ;
+	\fIwritecache\fR = ( \fIon\fR / \fIoff\fR ) ;
+	\fIinterface\fR = \fIinterface\fR ;
+
+	\fIlog\fR = \fIlog-target-name\fR ;   
+	\fIlog-level\fR = ( \fIerror\fR / \fIinfo\fR / \fInone\fR ) ;
+	
+     	acl {
+	       cfgread = "name of access list" ;
+	       cfgset  = "name of access list" ;
+	       read    = "name of access list" ;        
+	       write   = "name of access list" ;
+	}
+}
+.Ed			
+.Ss Usage
+The default section sets default values for the optional statements 
+in the device section. Options set in the default-section can be omited
+in the configuration of devices. The entire default section and all the statements 
+are optional. Valid options are:
+.Bl -tag -width 0n
+.It Ic shelf
+The default shelf number to use if not explicitly specified in the device
+specific configuration. The shelf number must be set to a value between 0 and 
+65534. This value default to zero.
+.It Ic slot
+The default slot number, this number will auto-increment for each device
+that doesn't have a slot value configured. The slot number must be set to a 
+value between 0 and 254. This value default to zero.
+.It Ic broadcast
+Default value for the broadcast flag. See the device section for more
+information. Defaults to on. 
+.It Ic writecache
+Default value for the writecache. See the device section for more information 
+on how to correctly configure this. Defaults to on. 
+.It Ic interface
+Default  interface. If no other interfacec is specified for the
+device this interface will be used. There is no default value for this 
+option. An interface must be specified either in the device section or 
+in the default section.
+.It Ic log-level
+Sets the default log-level to use for devices. 
+.It Ic log
+Specifies the logging target to use.
+.It Ic acl
+The sub-section acl is optional and can be used to attach default access-lists
+to devices that doesn't have access-lists configured. See the device-section
+for details on syntax.
+.El
+.Sh INTERFACE CONFIGURATION SECTION
+.Ss Syntax
+.Bd -literal
+interface {
+	\fIinterface\fR = "name of interface" ;
+    	\fImtu\fR = ( \fIauto\fR / \fInumber\fR ) ;
+	\fIlog\fR = \fIlog-target-name\fR ;   
+	\fIlog-level\fR = ( \fIerror\fR / \fIinfo\fR / \fInone\fR ) ;
+}
+.Ed			
+.Ss Usage
+The interface section is used to configure values specific to an interface.
+The entire section is optional and should only be used reconfiguration of 
+the default values are needed, for instance chaning the MTU or the logging 
+target. Valid options are:
+.Bl -tag -width 0n
+.It Ic interface
+Interface that this configuration relates to. Given in the format native 
+to the OS, eth0 for Linux, en0 for Macos and so on. 
+.It Ic mtu
+This statement sets the Maximum Transfer Unit (MTU) for this interface. The 
+default is to try to figure out the MTU automatically. A value of 1500 is a
+good choice in most cases. Use the mtu statement to decrease the mtu or 
+if the automatic detection failes for some reason.
+.It Ic log-level
+Sets the log-level to use for this interface.
+.It Ic log
+Specifies the logging target for this interface. 
+.El
+.Sh ACCESS-LIST CONFIGURATION SECTION
+.Ss Syntax
+.Bd -literal
+access-list {
+	\fIname\fR = "name of access-list" ;
+    	\fIpolicy\fR = ( \fIaccept\fR / \fIreject\fR ) ;
+	\fIlog\fR = \fIlog-target-name\fR ;   
+	
+	\fIaccept\fR = "Ethernet hardware address" ;
+	\fIreject\fR = "Ethernet hardware address" ;
+}
+.Ed			
+.Ss Usage
+The access-list section creates an access-list that can be used for 
+access-control or logging. Each access-list has a number for rule-lines
+that specifes either accept or reject for a single mac-address. If no
+match is found the default-policy of the access-list will be returned
+to the referencing object. Valid options are:
+.Bl -tag -width 0n
+.It Ic name
+Specifies the name of the access-list. The name is used to
+reference this acl in the device section. If the name containes whitespace 
+(or tab) the name must be enclosed in quotes "".
+.It Ic policy
+Specifies the default policy to return to the calling object if no matching
+rule can be found. 
+.It Ic log
+This statement is optional and should only be included if logging should
+be enabled on this access-list. Any calls to this access-list will regerate
+a logging entry. Please be aware that if attaching a logging access-list to 
+a the read or write operation will generate a large amount of log-entries
+and effect the performance of the device.
+.It Ic accept / reject
+Each \fIaccept\fR or \fIreject\fR statement can have one ethernet mac address
+for matching. The list of \fIaccept\fR and \fIreject\fR rules will be 
+traversed from top to bottom until a match is found, the corresponding rule
+will then be retuned. If no match is found the default policy will be returned
+instead of the match. There is no limit to the number of \fIaccept\fR and \fIreject\fR 
+statements that can be attached to an access-list. However, attaching a large
+number of statements to the access-list will decrease performance as the
+search is linear from top to bottom of the list. The list will be search once
+for each packet that is processed.
+.El
+.Sh EXAMPLE CONFIGURATION
+.Ss Simple
+.Bd -literal
+      device {
+         target = /dev/hda2;
+	 interface = eth0;
+      }
+      
+.Ed
+This is the simplest form of configuration possible. The only information 
+given is the block device to export and the interface to export it on.
+The slot and shelf will both be set to 0 and the slotnumber autoinremented
+for each additional exported device. Logging will use the default logging 
+target with the default log-level. No access-lists or fancy
+MTU-configuration is done.
+.Ss Using logging
+.Bd -literal
+      logging {
+      	      name = "default";
+      	      type = file;
+	      filename = "/var/log/qaoed.log";	      
+      }
+
+
+      device {
+         target = /dev/hda2;
+	 interface = eth0;
+      }
+      
+.Ed
+In this example we have added a redefinition of the default logging target
+named 'default'. Since the device statement doesn't specify any log-target it
+will use the default log-target redefined above. The log-target has been
+configured to write log entries to the file \fI/var/log/qaoed.log\fR
+.Ss Using the default section
+.Bd -literal
+      default {
+      	      shelf = 3;
+	      slot = 0;
+	      writecache = off;
+	      broadcast = off;
+	      interface = eth0;
+      }
+
+      device {
+         target = /dev/hda2;
+      }
+      
+      device {
+         target = /dev/hda4;
+      }
+      
+.Ed
+The default-section can be used to specify default values used in
+device-sections. Here the default section sets a number of options, including 
+the interface specification. This allows for the interface statemnet to be 
+omited in the device-section. Shelf will always be set to 3 and the 
+slot number will be set to 0 for the first device and 1 for the second.
+.Ss Adding Access-lists
+.Bd -literal
+      device {
+         target = /dev/hda4;
+	 interface = eth0;
+	 
+	 acl {
+	     cfgread = acl1;
+	     write = writeacl;
+	 }
+      }
+      
+      access-list {
+      	 name = acl1;
+	 policy = reject;
+	 
+	 allow = "00:16:3E:2F:E1:17";
+	 allow = "00:11:24:DA:76:C8";
+	 allow = "00:11:24:A0:CB:98";
+      }
+      
+      access-list {
+      	 name = writeacl;
+	 policy = reject;
+	 log = default;
+      }
+      
+.Ed
+In this example the device is configured with two different access-lists for 
+two different operations. The access-list named acl1 is attached to the
+readcfg function (the same as discover). Any requests to read the cfg for the 
+device will first be matched against this access-list. Only the three configured
+mac-addresses will recieve a reply, any other request will be dropped due
+to the default policy of reject. The write operation has an 'empty'
+access-list attached. This is an access-list that doesn't have any rules in
+it, any reference of this access-list will always return the default
+policy. In this case the default policy for 'writeacl' is reject. Since
+logging is enabled on the access-list named 'writeacl' any write requests to
+the device will be rejected and logged.
+.Sh MULTIPATHING
+In recent version of the Linux kernel AoE-initiator it is possible to use
+multipathing to gain performance and fault-resistance. Qaoed supports
+exporting the same target on multiple interfaces using the same slof/shelf
+number as long as the interfaces are different and the target device/file is
+the same. 
+.Sh WARNING
+Using raid5 and a journaling filesystem with the writecache turned on 
+could potentialy be dangerous to your data. 
+.Sh BUGS
+Lots ... 
+.Sh AUTHOR
+Written by Torbjorn Pettersson <wowie@pi.nxs.se>
+.Sh "REPORTING BUGS"
+Report bugs to <wowie_aoe@pi.nxs.se>
+.Sh FILES
+.Bl -tag -width 0n -compact
+.It Pa /etc/qaoed.conf
+The
+.Nm qaoed
+configuration file.
+.El
+.Sh SEE ALSO
+.Xr qaoed 8 ,
+.Xr vblade 8
